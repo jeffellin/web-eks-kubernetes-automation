@@ -31,7 +31,7 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
     
     - name: Run Maven package
-      run: cd demo && ./mvnw package
+      run: ./mvnw package
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
@@ -46,7 +46,6 @@ jobs:
     
     - name: Build and push Docker image with pack CLI
       run: |
-        cd demo
         pack build docker.io/ellinj/demo-sec-app:latest \
           --path target/ \
           --builder paketobuildpacks/builder-jammy-base \
