@@ -74,21 +74,41 @@ jobs:
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
-        continue-on-error: ${{ github.event_name == 'push' }}
         with:
           image-ref: 'ellinj/demo-sec-app:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+          exit-code: '0'
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
       
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+      
+      - name: Check Code Scanning alerts
+        if: github.event_name == 'pull_request'
+        run: |
+          # Wait for SARIF to be processed
+          sleep 30
+          
+          # Get code scanning alerts for this PR
+          ALERTS=$(gh api repos/${{ github.repository }}/code-scanning/alerts \
+            --jq '[.[] | select(.state == "open" and .rule.security_severity_level == "critical" or .rule.security_severity_level == "high")] | length')
+          
+          echo "Found $ALERTS critical/high severity alerts"
+          
+          if [ "$ALERTS" -gt "0" ]; then
+            echo "❌ Build failed due to $ALERTS critical/high security vulnerabilities"
+            echo "Review alerts in the Security tab and dismiss false positives if needed"
+            exit 1
+          else
+            echo "✅ No blocking security vulnerabilities found"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
     name: Update Kubernetes Deployment
