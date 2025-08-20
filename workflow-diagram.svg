@@ -1,0 +1,90 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .job-box { fill: #f0f8ff; stroke: #4682b4; stroke-width: 2; }
+      .trigger-box { fill: #e6ffe6; stroke: #32cd32; stroke-width: 2; }
+      .condition-box { fill: #fff5ee; stroke: #ff7f50; stroke-width: 2; }
+      .text { font-family: Arial, sans-serif; font-size: 12px; fill: #333; }
+      .title { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; fill: #333; }
+      .arrow { stroke: #666; stroke-width: 2; marker-end: url(#arrowhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="400" y="25" class="title" text-anchor="middle">GitHub Actions Workflow</text>
+  
+  <!-- Triggers -->
+  <rect x="50" y="50" width="120" height="60" class="trigger-box" rx="5"/>
+  <text x="110" y="75" class="title" text-anchor="middle">Push to main</text>
+  <text x="110" y="90" class="text" text-anchor="middle">(ignore k8s/**)</text>
+  
+  <rect x="200" y="50" width="120" height="60" class="trigger-box" rx="5"/>
+  <text x="260" y="75" class="title" text-anchor="middle">Pull Request</text>
+  <text x="260" y="90" class="text" text-anchor="middle">(ignore k8s/**)</text>
+  
+  <!-- Package Job -->
+  <rect x="150" y="150" width="200" height="120" class="job-box" rx="5"/>
+  <text x="250" y="170" class="title" text-anchor="middle">Package Job</text>
+  <text x="250" y="190" class="text" text-anchor="middle">• Setup JDK 17</text>
+  <text x="250" y="205" class="text" text-anchor="middle">• Cache Maven deps</text>
+  <text x="250" y="220" class="text" text-anchor="middle">• Run mvn package</text>
+  <text x="250" y="235" class="text" text-anchor="middle">• Login to Docker Hub</text>
+  <text x="250" y="250" class="text" text-anchor="middle">• Build &amp; push image</text>
+  <text x="250" y="265" class="text" text-anchor="middle">  (SHA + latest tags)</text>
+  
+  <!-- Trivy Job -->
+  <rect x="400" y="150" width="180" height="120" class="job-box" rx="5"/>
+  <text x="490" y="170" class="title" text-anchor="middle">Security Scan</text>
+  <text x="490" y="190" class="text" text-anchor="middle">• Run Trivy scanner</text>
+  <text x="490" y="205" class="text" text-anchor="middle">• Scan latest image</text>
+  <text x="490" y="220" class="text" text-anchor="middle">• Check CRITICAL/HIGH</text>
+  <text x="490" y="235" class="text" text-anchor="middle">• Upload SARIF results</text>
+  <text x="490" y="250" class="text" text-anchor="middle">• Fail PR if vulns found</text>
+  <text x="490" y="265" class="text" text-anchor="middle">• Continue on push</text>
+  
+  <!-- Deploy Job -->
+  <rect x="600" y="300" width="180" height="120" class="job-box" rx="5"/>
+  <text x="690" y="320" class="title" text-anchor="middle">Deploy</text>
+  <text x="690" y="340" class="text" text-anchor="middle">• Update deployment.yaml</text>
+  <text x="690" y="355" class="text" text-anchor="middle">• Set image to SHA tag</text>
+  <text x="690" y="370" class="text" text-anchor="middle">• Commit changes</text>
+  <text x="690" y="385" class="text" text-anchor="middle">• Push to repo</text>
+  
+  <!-- Condition -->
+  <rect x="400" y="300" width="160" height="60" class="condition-box" rx="5"/>
+  <text x="480" y="320" class="title" text-anchor="middle">Only on dev branch</text>
+  <text x="480" y="340" class="text" text-anchor="middle">github.ref == 'refs/heads/dev'</text>
+  
+  <!-- Arrows -->
+  <line x1="110" y1="110" x2="220" y2="150" class="arrow"/>
+  <line x1="260" y1="110" x2="280" y2="150" class="arrow"/>
+  
+  <line x1="350" y1="210" x2="400" y2="210" class="arrow"/>
+  
+  <line x1="480" y1="270" x2="480" y2="300" class="arrow"/>
+  <line x1="560" y1="330" x2="600" y2="330" class="arrow"/>
+  
+  <!-- Legend -->
+  <rect x="50" y="450" width="200" height="120" fill="none" stroke="#ccc" stroke-width="1"/>
+  <text x="150" y="470" class="title" text-anchor="middle">Legend</text>
+  
+  <rect x="60" y="480" width="20" height="15" class="trigger-box"/>
+  <text x="90" y="492" class="text">Triggers</text>
+  
+  <rect x="60" y="500" width="20" height="15" class="job-box"/>
+  <text x="90" y="512" class="text">Jobs</text>
+  
+  <rect x="60" y="520" width="20" height="15" class="condition-box"/>
+  <text x="90" y="532" class="text">Conditions</text>
+  
+  <!-- Flow description -->
+  <text x="400" y="480" class="title" text-anchor="middle">Workflow Flow</text>
+  <text x="400" y="500" class="text" text-anchor="middle">1. Package job builds and pushes Docker image</text>
+  <text x="400" y="515" class="text" text-anchor="middle">2. Trivy scans image for vulnerabilities</text>
+  <text x="400" y="530" class="text" text-anchor="middle">3. Deploy job updates k8s deployment (dev branch only)</text>
+  <text x="400" y="545" class="text" text-anchor="middle">4. On PR: Trivy can block if vulnerabilities found</text>
+  <text x="400" y="560" class="text" text-anchor="middle">5. Workflow ignores changes to k8s/ directory</text>
+</svg>
