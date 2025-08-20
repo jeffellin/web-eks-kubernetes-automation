@@ -58,7 +58,7 @@ jobs:
           --builder paketobuildpacks/builder-jammy-base \
           --env BP_JVM_VERSION=17 \
           --publish 
-        docker iamges 
+        docker images 
         echo "step 2"
         # Also tag as latest
         docker tag "$IMAGE_TAG" ellinj/demo-sec-app:latest
