@@ -103,7 +103,7 @@ jobs:
       
       - name: Update deployment image tag
         run: |
-          sed -i "s|image: demo-app:.*|image: docker.io/ellinj/demo-sec-app:${{ github.sha }}|g" k8s/deployment.yaml
+          sed -i "s|image: .*ellinj/demo-sec-app:.*|image: ellinj/demo-sec-app:${{ github.sha }}|g" k8s/deployment.yaml
           
       - name: Commit updated deployment
         run: |
