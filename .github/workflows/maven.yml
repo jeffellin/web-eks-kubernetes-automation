@@ -50,16 +50,18 @@ jobs:
     
     - name: Build and push Docker image with pack CLI
       run: |
-        IMAGE_TAG="docker.io/ellinj/demo-sec-app:${{ github.sha }}"
+        IMAGE_TAG="ellinj/demo-sec-app:${{ github.sha }}"
+        
+        # Build and push SHA-tagged image
         pack build $IMAGE_TAG \
           --path target/ \
           --builder paketobuildpacks/builder-jammy-base \
           --env BP_JVM_VERSION=17 \
-          --publish
+          --publish 
         
         # Also tag as latest
-        docker tag "$IMAGE_TAG" docker.io/ellinj/demo-sec-app:latest
-        docker push docker.io/ellinj/demo-sec-app:latest
+        docker tag "$IMAGE_TAG" ellinj/demo-sec-app:latest
+        docker push ellinj/demo-sec-app:latest
   trivy:
     name: Security Scan
     runs-on: self-hosted
@@ -72,7 +74,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         continue-on-error: true
         with:
-          image-ref: 'docker.io/ellinj/demo-sec-app:latest'
+          image-ref: 'ellinj/demo-sec-app:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
           exit-code: '0'
