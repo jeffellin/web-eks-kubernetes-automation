@@ -74,12 +74,12 @@ jobs:
       
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
-        continue-on-error: true
+        continue-on-error: ${{ github.event_name == 'push' }}
         with:
           image-ref: 'ellinj/demo-sec-app:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          exit-code: '0'
+          exit-code: ${{ github.event_name == 'pull_request' && '1' || '0' }}
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
@@ -94,7 +94,7 @@ jobs:
     name: Update Kubernetes Deployment
     runs-on: self-hosted
     needs: [package, trivy]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/dev'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
