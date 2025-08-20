@@ -58,7 +58,7 @@ jobs:
           --publish
         
         # Also tag as latest
-        docker tag $IMAGE_TAG docker.io/ellinj/demo-sec-app:latest
+        docker tag "$IMAGE_TAG" docker.io/ellinj/demo-sec-app:latest
         docker push docker.io/ellinj/demo-sec-app:latest
   trivy:
     name: Security Scan
