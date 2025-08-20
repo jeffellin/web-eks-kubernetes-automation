@@ -65,7 +65,7 @@ jobs:
         docker push "$IMAGE_TAG"
         docker push ellinj/demo-sec-app:latest
   trivy:
-    name: Security Scan
+    name: security/scan
     runs-on: self-hosted
     needs: package
     steps:
