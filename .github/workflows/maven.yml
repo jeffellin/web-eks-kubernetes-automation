@@ -3,12 +3,16 @@ name: Maven Package
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'k8s/**'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - 'k8s/**'
 
 permissions:
   security-events: write
-  contents: read
+  contents: write
 
 jobs:
   package:
@@ -46,11 +50,16 @@ jobs:
     
     - name: Build and push Docker image with pack CLI
       run: |
-        pack build docker.io/ellinj/demo-sec-app:latest \
+        IMAGE_TAG="docker.io/ellinj/demo-sec-app:${{ github.sha }}"
+        pack build $IMAGE_TAG \
           --path target/ \
           --builder paketobuildpacks/builder-jammy-base \
           --env BP_JVM_VERSION=17 \
           --publish
+        
+        # Also tag as latest
+        docker tag $IMAGE_TAG docker.io/ellinj/demo-sec-app:latest
+        docker push docker.io/ellinj/demo-sec-app:latest
   trivy:
     name: Security Scan
     runs-on: self-hosted
@@ -76,3 +85,26 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
+
+  deploy:
+    name: Update Kubernetes Deployment
+    runs-on: self-hosted
+    needs: [package, trivy]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update deployment image tag
+        run: |
+          sed -i "s|image: demo-app:.*|image: docker.io/ellinj/demo-sec-app:${{ github.sha }}|g" k8s/deployment.yaml
+          
+      - name: Commit updated deployment
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add k8s/deployment.yaml
+          git commit -m "Update deployment image to SHA ${{ github.sha }}" || exit 0
+          git push
