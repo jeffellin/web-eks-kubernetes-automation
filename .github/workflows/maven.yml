@@ -2,11 +2,10 @@ name: Maven Package
 
 on:
   push:
-    branches: [ main ]
     paths-ignore:
       - 'k8s/**'
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev, prod ]
     paths-ignore:
       - 'k8s/**'
 
