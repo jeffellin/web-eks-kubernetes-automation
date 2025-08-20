@@ -52,17 +52,17 @@ jobs:
       run: |
         IMAGE_TAG="ellinj/demo-sec-app:${{ github.sha }}"
         
-        # Build and push SHA-tagged image
+        # Build image locally first
         pack build $IMAGE_TAG \
           --path target/ \
           --builder paketobuildpacks/builder-jammy-base \
-          --env BP_JVM_VERSION=17 \
-          --publish 
-        docker images 
-        echo "step 2"
-        # Also tag as latest
+          --env BP_JVM_VERSION=17
+        
+        # Tag as latest
         docker tag "$IMAGE_TAG" ellinj/demo-sec-app:latest
-        echo "step 2"
+        
+        # Push both tags
+        docker push "$IMAGE_TAG"
         docker push ellinj/demo-sec-app:latest
   trivy:
     name: Security Scan
