@@ -1,0 +1,181 @@
+# .github/workflows/advanced-claude-review.yml
+name: Advanced Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+      
+    steps:
+    - name: Checkout PR
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+        
+    - name: Checkout base branch
+      run: |
+        git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+        
+    - name: Get all source files
+      id: changed-files
+      run: |
+        # Get all files in src/ directory with specific extensions
+        CHANGED_FILES=$(find src/ -type f -name "*.java" -o -name "*.xml" -o -name "*.properties" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" | head -20)
+        echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+        
+    - name: Setup Node.js
+      if: steps.changed-files.outputs.changed_files != ''
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Run Claude Review
+      if: steps.changed-files.outputs.changed_files != ''
+      env:
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Install dependencies
+        npm init -y
+        npm install @anthropic-ai/sdk @octokit/rest
+
+        # Create review script
+        cat << 'EOF' > claude-review.js
+        const Anthropic = require('@anthropic-ai/sdk');
+        const { Octokit } = require('@octokit/rest');
+        const fs = require('fs');
+        const { execSync } = require('child_process');
+
+        const anthropic = new Anthropic({
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        });
+
+        const octokit = new Octokit({
+          auth: process.env.GITHUB_TOKEN,
+        });
+
+        async function analyzeFile(filePath) {
+          try {
+            const fileContent = fs.readFileSync(filePath, 'utf8');
+            const fileDiff = `Full file analysis - not diff-based`;
+            
+            if (!fileDiff.trim()) return null;
+
+            const prompt = `Review this source file focusing on:
+
+        **Code Quality & Best Practices:**
+        - Follow language-specific conventions
+        - Proper error handling
+        - Code organization and structure
+
+        **Security & Performance:**
+        - Potential vulnerabilities
+        - Performance bottlenecks
+        - Resource management
+
+        **Maintainability:**
+        - Code readability
+        - Documentation needs
+        - Potential refactoring opportunities
+
+        **File:** ${filePath}
+
+        **File Content:**
+        \`\`\`${getFileExtension(filePath)}
+        ${fileContent.length > 3000 ? fileContent.substring(0, 3000) + '...[truncated]' : fileContent}
+        \`\`\`
+
+        Provide specific, actionable feedback. If the code looks good, mention what's done well. Be constructive and focus on the most important issues.`;
+
+            const response = await anthropic.messages.create({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 2000,
+              messages: [{ role: 'user', content: prompt }]
+            });
+
+            return {
+              file: filePath,
+              review: response.content[0].text,
+              hasIssues: response.content[0].text.toLowerCase().includes('issue') || 
+                        response.content[0].text.toLowerCase().includes('problem') ||
+                        response.content[0].text.toLowerCase().includes('concern')
+            };
+          } catch (error) {
+            console.error(`Error analyzing ${filePath}:`, error.message);
+            return null;
+          }
+        }
+
+        function getFileExtension(filePath) {
+          const ext = filePath.split('.').pop().toLowerCase();
+          const langMap = {
+            'js': 'javascript', 'ts': 'typescript', 'jsx': 'jsx', 'tsx': 'tsx',
+            'py': 'python', 'java': 'java', 'go': 'go', 'rs': 'rust',
+            'rb': 'ruby', 'php': 'php', 'cs': 'csharp', 'cpp': 'cpp',
+            'c': 'c', 'h': 'c', 'sql': 'sql', 'yaml': 'yaml', 'yml': 'yaml',
+            'json': 'json', 'md': 'markdown'
+          };
+          return langMap[ext] || ext;
+        }
+
+        async function main() {
+          const changedFiles = `${{ steps.changed-files.outputs.changed_files }}`.trim().split('\n').filter(f => f);
+          
+          if (changedFiles.length === 0) {
+            console.log('No source files found');
+            return;
+          }
+
+          console.log(`Reviewing ${changedFiles.length} source files...`);
+          
+          const reviews = [];
+          for (const file of changedFiles) {
+            console.log(`Analyzing ${file}...`);
+            const review = await analyzeFile(file);
+            if (review) reviews.push(review);
+          }
+
+          if (reviews.length === 0) {
+            console.log('No reviews generated');
+            return;
+          }
+
+          // Create summary
+          const hasIssues = reviews.some(r => r.hasIssues);
+          const summary = hasIssues ? '⚠️ Issues found that may need attention' : '✅ Code looks good overall';
+          
+          let comment = `## 🤖 Claude Code Review\n\n### Summary\n${summary}\n\n`;
+          
+          reviews.forEach((review, index) => {
+            const icon = review.hasIssues ? '⚠️' : '✅';
+            comment += `### ${icon} \`${review.file}\`\n\n${review.review}\n\n---\n\n`;
+          });
+
+          comment += `\n*Reviewed ${reviews.length} file(s) with Claude Sonnet 4*`;
+
+          // Post review comment
+          await octokit.rest.issues.createComment({
+            owner: '${{ github.repository_owner }}',
+            repo: '${{ github.event.repository.name }}',
+            issue_number: ${{ github.event.number }},
+            body: comment.substring(0, 65000) // GitHub comment limit
+          });
+
+          console.log('Code review completed and posted!');
+        }
+
+        main().catch(console.error);
+        EOF
+
+        # Run the review
+        node claude-review.js

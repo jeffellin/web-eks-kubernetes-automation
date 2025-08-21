@@ -33,9 +33,12 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
     
-    - name: Run Maven package
-      run: ./mvnw package
+    - name: test/unit-tests
+      run: ./mvnw test
 
+    - name: package
+      run: ./mvnw package
+    
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
@@ -47,7 +50,7 @@ jobs:
         curl -sSL "https://github.com/buildpacks/pack/releases/download/v0.32.1/pack-v0.32.1-linux.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack
         pack --version
     
-    - name: Build and push Docker image with pack CLI
+    - name: build/docker
       run: |
         IMAGE_TAG="ellinj/demo-sec-app:${{ github.sha }}"
         
