@@ -70,6 +70,7 @@ jobs:
     name: security/scan
     runs-on: self-hosted
     needs: package
+    if: github.event_name == 'pull_request' || contains(fromJSON('["refs/heads/main", "refs/heads/dev", "refs/heads/prod"]'), github.ref)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -137,3 +138,40 @@ jobs:
           git add k8s/deployment.yaml
           git commit -m "Update deployment image to SHA ${{ github.sha }}" || exit 0
           git push
+
+  code-review:
+    name: Code Review
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/code-review.yml
+    with:
+      custom_prompt: |
+        Review this Java Spring Boot application file focusing on:
+        
+        **Spring Boot Best Practices:**
+        - Proper use of annotations (@Service, @Repository, @Controller)
+        - Configuration management
+        - Bean lifecycle and dependency injection
+        
+        **Java & Maven Specific:**
+        - Code structure and organization
+        - Exception handling patterns
+        - Testing approach (unit vs integration)
+        
+        **Security & Performance:**
+        - Spring Security implementation
+        - Database connection handling
+        - Memory and resource management
+        
+        **File:** {{FILE_PATH}}
+        
+        **Content:**
+        ```{{FILE_EXTENSION}}
+        {{FILE_CONTENT}}
+        ```
+        
+        Provide actionable feedback for this Spring Boot application.
+    secrets: inherit
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write

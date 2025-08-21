@@ -2,8 +2,13 @@
 name: Advanced Claude Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  workflow_call:
+    inputs:
+      custom_prompt:
+        description: 'Custom prompt for Claude code review'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   claude-review:
@@ -44,6 +49,7 @@ jobs:
       env:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CUSTOM_PROMPT: ${{ inputs.custom_prompt }}
       run: |
         # Install dependencies
         npm init -y
@@ -71,7 +77,8 @@ jobs:
             
             if (!fileDiff.trim()) return null;
 
-            const prompt = `Review this source file focusing on:
+            const customPrompt = process.env.CUSTOM_PROMPT || '';
+            const defaultPrompt = `Review this source file focusing on:
 
         **Code Quality & Best Practices:**
         - Follow language-specific conventions
@@ -96,6 +103,10 @@ jobs:
         \`\`\`
 
         Provide specific, actionable feedback. If the code looks good, mention what's done well. Be constructive and focus on the most important issues.`;
+
+            const prompt = customPrompt.trim() ? 
+              customPrompt.replace('{{FILE_PATH}}', filePath).replace('{{FILE_CONTENT}}', fileContent.length > 3000 ? fileContent.substring(0, 3000) + '...[truncated]' : fileContent).replace('{{FILE_EXTENSION}}', getFileExtension(filePath)) :
+              defaultPrompt;
 
             const response = await anthropic.messages.create({
               model: 'claude-sonnet-4-20250514',
