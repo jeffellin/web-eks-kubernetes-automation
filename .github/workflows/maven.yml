@@ -70,6 +70,7 @@ jobs:
     name: security/scan
     runs-on: self-hosted
     needs: package
+    if: github.event_name == 'pull_request' || contains(fromJSON('["refs/heads/main", "refs/heads/dev", "refs/heads/prod"]'), github.ref)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
