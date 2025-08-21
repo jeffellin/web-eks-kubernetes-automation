@@ -49,6 +49,7 @@ jobs:
       env:
         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        CUSTOM_PROMPT: ${{ inputs.custom_prompt }}
       run: |
         # Install dependencies
         npm init -y
@@ -76,7 +77,7 @@ jobs:
             
             if (!fileDiff.trim()) return null;
 
-            const customPrompt = '${{ inputs.custom_prompt }}';
+            const customPrompt = process.env.CUSTOM_PROMPT || '';
             const defaultPrompt = `Review this source file focusing on:
 
         **Code Quality & Best Practices:**
