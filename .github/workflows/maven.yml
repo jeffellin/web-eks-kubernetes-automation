@@ -39,37 +39,58 @@ jobs:
     - name: package
       run: ./mvnw package
     
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
+    - name: Upload target artifacts
+      uses: actions/upload-artifact@v4
       with:
-        username: ellinj
-        password: ${{ secrets.DOCKER_PASSWORD }}
-    
-    - name: Install pack CLI
-      run: |
-        curl -sSL "https://github.com/buildpacks/pack/releases/download/v0.32.1/pack-v0.32.1-linux.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack
-        pack --version
-    
-    - name: build/docker
-      run: |
-        IMAGE_TAG="ellinj/demo-sec-app:${{ github.sha }}"
-        
-        # Build image locally first
-        pack build $IMAGE_TAG \
-          --path target/ \
-          --builder paketobuildpacks/builder-jammy-base \
-          --env BP_JVM_VERSION=17
-        
-        # Tag as latest
-        docker tag "$IMAGE_TAG" ellinj/demo-sec-app:latest
-        
-        # Push both tags
-        docker push "$IMAGE_TAG"
-        docker push ellinj/demo-sec-app:latest
+        name: maven-artifacts
+        path: target/
+
+  docker-build:
+    name: docker/build
+    runs-on: self-hosted
+    needs: package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download target artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: maven-artifacts
+          path: target/
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ellinj
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Install pack CLI
+        run: |
+          curl -sSL "https://github.com/buildpacks/pack/releases/download/v0.32.1/pack-v0.32.1-linux.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack
+          pack --version
+      
+      - name: build/docker
+        run: |
+          IMAGE_TAG="ellinj/demo-sec-app:${{ github.sha }}"
+          
+          # Build image locally first
+          pack build $IMAGE_TAG \
+            --path target/ \
+            --builder paketobuildpacks/builder-jammy-base \
+            --env BP_JVM_VERSION=17
+          
+          # Tag as latest
+          docker tag "$IMAGE_TAG" ellinj/demo-sec-app:latest
+          
+          # Push both tags
+          docker push "$IMAGE_TAG"
+          docker push ellinj/demo-sec-app:latest
+
   trivy:
     name: security/scan
     runs-on: self-hosted
-    needs: package
+    needs: docker-build
     if: github.event_name == 'pull_request' || contains(fromJSON('["refs/heads/main", "refs/heads/dev", "refs/heads/prod"]'), github.ref)
     steps:
       - name: Checkout code
@@ -119,7 +140,7 @@ jobs:
   deploy:
     name: Update Kubernetes Deployment
     runs-on: self-hosted
-    needs: [package, trivy]
+    needs: [docker-build, trivy]
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
