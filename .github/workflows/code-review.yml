@@ -24,11 +24,11 @@ jobs:
       run: |
         git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
         
-    - name: Get changed files with extensions
+    - name: Get all source files
       id: changed-files
       run: |
-        # Get changed files with specific extensions
-        CHANGED_FILES=$(git diff --name-only --diff-filter=AMR origin/${{ github.base_ref }}...HEAD | grep -E '\.(js|ts|jsx|tsx|py|java|go|rs|rb|php|cs|cpp|c|h|sql|yaml|yml|json|md)$' | head -20)
+        # Get all files in src/ directory with specific extensions
+        CHANGED_FILES=$(find src/ -type f -name "*.java" -o -name "*.xml" -o -name "*.properties" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" | head -20)
         echo "changed_files<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
@@ -67,11 +67,11 @@ jobs:
         async function analyzeFile(filePath) {
           try {
             const fileContent = fs.readFileSync(filePath, 'utf8');
-            const fileDiff = execSync(`git diff origin/${{ github.base_ref }}...HEAD -- "${filePath}"`, { encoding: 'utf8' });
+            const fileDiff = `Full file analysis - not diff-based`;
             
             if (!fileDiff.trim()) return null;
 
-            const prompt = `Review this file change focusing on:
+            const prompt = `Review this source file focusing on:
 
         **Code Quality & Best Practices:**
         - Follow language-specific conventions
@@ -90,12 +90,7 @@ jobs:
 
         **File:** ${filePath}
 
-        **Diff:**
-        \`\`\`diff
-        ${fileDiff}
-        \`\`\`
-
-        **Current File Content (for context):**
+        **File Content:**
         \`\`\`${getFileExtension(filePath)}
         ${fileContent.length > 3000 ? fileContent.substring(0, 3000) + '...[truncated]' : fileContent}
         \`\`\`
@@ -137,11 +132,11 @@ jobs:
           const changedFiles = `${{ steps.changed-files.outputs.changed_files }}`.trim().split('\n').filter(f => f);
           
           if (changedFiles.length === 0) {
-            console.log('No relevant files changed');
+            console.log('No source files found');
             return;
           }
 
-          console.log(`Reviewing ${changedFiles.length} files...`);
+          console.log(`Reviewing ${changedFiles.length} source files...`);
           
           const reviews = [];
           for (const file of changedFiles) {
