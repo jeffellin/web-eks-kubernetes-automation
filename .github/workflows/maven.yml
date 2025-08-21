@@ -36,6 +36,9 @@ jobs:
     - name: test/unit-tests
       run: ./mvnw test
 
+    - name: package
+      run: ./mvnw package
+    
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
