@@ -29,11 +29,11 @@ jobs:
       run: |
         git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
         
-    - name: Get all source files
+    - name: Get changed files only
       id: changed-files
       run: |
-        # Get all files in src/ directory with specific extensions
-        CHANGED_FILES=$(find src/ -type f -name "*.java" -o -name "*.xml" -o -name "*.properties" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" | head -20)
+        # Get files changed in this PR only
+        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(java|xml|properties|yml|yaml|json)$' | head -20)
         echo "changed_files<<EOF" >> $GITHUB_OUTPUT
         echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
