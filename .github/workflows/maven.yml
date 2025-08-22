@@ -173,7 +173,7 @@ jobs:
           cd gitops-repo
           git add demo-app/
           git commit -m "Update deployment image to SHA ${{ github.sha }}" || exit 0
-          git pull origin update-deployment-"$BRANCH_NAME"
+          git pull origin "$BRANCH_NAME" || true
           git push origin "$BRANCH_NAME"
       
       - name: Create Pull Request
