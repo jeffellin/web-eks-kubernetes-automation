@@ -74,3 +74,15 @@ terraform.rc
 
 # Security scan reports
 *.sarif
+
+# Vaadin frontend build artifacts and generated files
+src/main/frontend/generated/
+src/main/frontend/index.html
+node_modules/
+package-lock.json
+webpack.generated.js
+webpack.config.js
+vite.generated.ts
+vite.config.ts
+tsconfig.json
+types.d.ts
