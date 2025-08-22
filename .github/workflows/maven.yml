@@ -169,7 +169,7 @@ jobs:
       - name: Update deployment image tag
         run: |
           cd gitops-repo
-          sed -i "s|image: .*ellinj/demo-sec-app:.*|image: ellinj/demo-sec-app:${{ github.sha }}|g" k8s/deployment.yaml
+          sed -i "s|image: .*ellinj/demo-sec-app:.*|image: ellinj/demo-sec-app:${{ github.sha }}|g" demo-app/deployment.yaml
           
       - name: Commit and push changes
         run: |
