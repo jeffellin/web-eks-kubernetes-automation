@@ -153,7 +153,7 @@ jobs:
       - name: Checkout GitOps repo
         uses: actions/checkout@v4
         with:
-          repository: 'ellinj/eks-kubernetes-gitops'
+          repository: 'jeffellin/eks-kubernetes-gitops'
           token: ${{ steps.generate_token.outputs.token }}
           path: gitops-repo
       
