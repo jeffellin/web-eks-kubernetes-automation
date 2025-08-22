@@ -3,12 +3,9 @@ name: Maven Package
 on:
   push:
     paths-ignore:
-      - 'k8s/**'
+      - 'd/**'
   pull_request:
     branches: [ main, dev, prod ]
-    paths-ignore:
-      - 'k8s/**'
-
 permissions:
   security-events: write
   contents: write
@@ -174,7 +171,7 @@ jobs:
       - name: Commit and push changes
         run: |
           cd gitops-repo
-          git add k8s/
+          git add demo-app/
           git commit -m "Update deployment image to SHA ${{ github.sha }}" || exit 0
           git push origin "$BRANCH_NAME"
       
