@@ -1,0 +1,100 @@
+/* Guestbook View Styles */
+.guestbook-view {
+    padding: var(--lumo-space-l);
+}
+
+.guestbook-title {
+    color: var(--lumo-primary-color);
+    margin-bottom: var(--lumo-space-l);
+    text-align: center;
+}
+
+.toolbar {
+    align-items: center;
+    gap: var(--lumo-space-m);
+    margin-bottom: var(--lumo-space-m);
+    padding: var(--lumo-space-s);
+    background-color: var(--lumo-contrast-5pct);
+    border-radius: var(--lumo-border-radius-m);
+}
+
+.content {
+    gap: var(--lumo-space-l);
+}
+
+/* Grid Styles */
+.guestbook-grid {
+    border-radius: var(--lumo-border-radius-m);
+    box-shadow: var(--lumo-box-shadow-s);
+}
+
+.guestbook-grid::part(header-cell) {
+    background-color: var(--lumo-primary-color-10pct);
+    font-weight: bold;
+}
+
+.guestbook-grid::part(cell) {
+    padding: var(--lumo-space-s);
+}
+
+/* Form Styles */
+.guestbook-form {
+    padding: var(--lumo-space-l);
+    background-color: var(--lumo-base-color);
+    border: 1px solid var(--lumo-contrast-20pct);
+    border-radius: var(--lumo-border-radius-m);
+    box-shadow: var(--lumo-box-shadow-s);
+}
+
+.guestbook-form h3 {
+    color: var(--lumo-primary-color);
+    margin-bottom: var(--lumo-space-m);
+    text-align: center;
+}
+
+.button-layout {
+    justify-content: space-between;
+    margin-top: var(--lumo-space-m);
+    gap: var(--lumo-space-s);
+}
+
+/* Action buttons in grid */
+.guestbook-grid vaadin-button[theme~="error"] {
+    --lumo-button-size: var(--lumo-size-s);
+    min-width: auto;
+}
+
+.guestbook-grid vaadin-button[theme~="error"]:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Confirm dialog styling */
+vaadin-confirm-dialog-overlay [slot="confirm-button"] {
+    background-color: var(--lumo-error-color);
+    color: var(--lumo-error-contrast-color);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .content {
+        flex-direction: column;
+    }
+    
+    .guestbook-form {
+        width: 100%;
+    }
+    
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .button-layout {
+        flex-direction: column;
+    }
+    
+    .guestbook-grid [part="cell"]:last-child {
+        padding: var(--lumo-space-xs);
+    }
+}
