@@ -141,24 +141,56 @@ jobs:
     name: Update Kubernetes Deployment
     runs-on: self-hosted
     needs: [docker-build, trivy]
-    if: github.event_name == 'pull_request'
+    if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout code
+      - name: Generate GitHub App token
+        id: generate_token
+        uses: tibdex/github-app-token@v1
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.PRIVATE_KEY }}
+      
+      - name: Checkout GitOps repo
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: 'ellinj/eks-kubernetes-gitops'
+          token: ${{ steps.generate_token.outputs.token }}
+          path: gitops-repo
+      
+      - name: Create new branch
+        run: |
+          cd gitops-repo
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          BRANCH_NAME="update-deployment-${{ github.sha }}"
+          git checkout -b "$BRANCH_NAME"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
       
       - name: Update deployment image tag
         run: |
+          cd gitops-repo
           sed -i "s|image: .*ellinj/demo-sec-app:.*|image: ellinj/demo-sec-app:${{ github.sha }}|g" k8s/deployment.yaml
           
-      - name: Commit updated deployment
+      - name: Commit and push changes
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add k8s/deployment.yaml
+          cd gitops-repo
+          git add k8s/
           git commit -m "Update deployment image to SHA ${{ github.sha }}" || exit 0
-          git push
+          git push origin "$BRANCH_NAME"
+      
+      - name: Create Pull Request
+        run: |
+          cd gitops-repo
+          gh pr create \
+            --title "Update deployment image to ${{ github.sha }}" \
+            --body "Automated deployment update from web-eks-kubernetes-automation
+            
+            - Updated image tag to: ellinj/demo-sec-app:${{ github.sha }}
+            - Source commit: ${{ github.repository }}@${{ github.sha }}" \
+            --base main \
+            --head "$BRANCH_NAME"
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
 
   code-review:
     name: Code Review
