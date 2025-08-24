@@ -62,20 +62,12 @@ jobs:
           username: ellinj
           password: ${{ secrets.DOCKER_PASSWORD }}
       
-      - name: Install pack CLI
-        run: |
-          curl -sSL "https://github.com/buildpacks/pack/releases/download/v0.32.1/pack-v0.32.1-linux.tgz" | sudo tar -C /usr/local/bin/ --no-same-owner -xzv pack
-          pack --version
-      
       - name: build/docker
         run: |
           IMAGE_TAG="ellinj/demo-sec-app:${{ github.sha }}"
           
-          # Build image locally first
-          pack build $IMAGE_TAG \
-            --path target/ \
-            --builder paketobuildpacks/builder-jammy-base \
-            --env BP_JVM_VERSION=17
+          # Build image using Dockerfile
+          docker build -t "$IMAGE_TAG" .
           
           # Tag as latest
           docker tag "$IMAGE_TAG" ellinj/demo-sec-app:latest
