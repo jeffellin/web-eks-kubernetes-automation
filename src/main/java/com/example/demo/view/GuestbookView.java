@@ -1,5 +1,6 @@
 package com.example.demo.view;
 
+import com.example.demo.config.GuestbookProperties;
 import com.example.demo.entity.Guestbook;
 import com.example.demo.service.GuestbookService;
 import com.vaadin.flow.component.button.Button;
@@ -17,6 +18,8 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.annotation.SpringComponent;
 import com.vaadin.flow.spring.annotation.UIScope;
+import com.vaadin.flow.theme.lumo.Lumo;
+import com.vaadin.flow.component.AttachEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @SpringComponent
@@ -25,13 +28,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class GuestbookView extends VerticalLayout {
 
     private final GuestbookService guestbookService;
+    private final GuestbookProperties guestbookProperties;
     private final Grid<Guestbook> grid;
     private final GuestbookForm form;
     private final TextField filterText;
 
     @Autowired
-    public GuestbookView(GuestbookService guestbookService) {
+    public GuestbookView(GuestbookService guestbookService, GuestbookProperties guestbookProperties) {
         this.guestbookService = guestbookService;
+        this.guestbookProperties = guestbookProperties;
+        
         
         addClassName("guestbook-view");
         setSizeFull();
@@ -63,7 +69,11 @@ public class GuestbookView extends VerticalLayout {
             form.editEntry(new Guestbook());
         });
         
-        HorizontalLayout toolbar = new HorizontalLayout(filterText, addEntryButton);
+        Button themeToggleButton = new Button();
+        updateThemeToggleButton(themeToggleButton);
+        themeToggleButton.addClickListener(e -> toggleTheme(themeToggleButton));
+        
+        HorizontalLayout toolbar = new HorizontalLayout(filterText, addEntryButton, themeToggleButton);
         toolbar.addClassName("toolbar");
         
         HorizontalLayout content = new HorizontalLayout(grid, form);
@@ -75,6 +85,18 @@ public class GuestbookView extends VerticalLayout {
         add(title, toolbar, content);
         updateList();
         closeEditor();
+    }
+    
+    @Override
+    protected void onAttach(AttachEvent attachEvent) {
+        super.onAttach(attachEvent);
+        
+        // Apply theme based on configuration
+        if (guestbookProperties.isDarkTheme()) {
+            getUI().ifPresent(ui -> ui.getElement().setAttribute("theme", Lumo.DARK));
+        } else {
+            getUI().ifPresent(ui -> ui.getElement().setAttribute("theme", Lumo.LIGHT));
+        }
     }
     
     private void configureGrid() {
@@ -165,5 +187,35 @@ public class GuestbookView extends VerticalLayout {
         } else {
             grid.setItems(guestbookService.findByNameContaining(filterText.getValue()));
         }
+    }
+    
+    private void updateThemeToggleButton(Button themeToggleButton) {
+        if (isDarkThemeActive()) {
+            themeToggleButton.setText("Light Mode");
+            themeToggleButton.setIcon(VaadinIcon.SUN_O.create());
+            themeToggleButton.addThemeVariants(ButtonVariant.LUMO_CONTRAST);
+        } else {
+            themeToggleButton.setText("Dark Mode");
+            themeToggleButton.setIcon(VaadinIcon.MOON_O.create());
+            themeToggleButton.removeThemeVariants(ButtonVariant.LUMO_CONTRAST);
+        }
+    }
+    
+    private void toggleTheme(Button themeToggleButton) {
+        getUI().ifPresent(ui -> {
+            boolean currentlyDark = isDarkThemeActive();
+            if (currentlyDark) {
+                ui.getElement().setAttribute("theme", Lumo.LIGHT);
+            } else {
+                ui.getElement().setAttribute("theme", Lumo.DARK);
+            }
+            updateThemeToggleButton(themeToggleButton);
+        });
+    }
+    
+    private boolean isDarkThemeActive() {
+        return getUI().map(ui -> 
+            Lumo.DARK.equals(ui.getElement().getAttribute("theme"))
+        ).orElse(guestbookProperties.isDarkTheme());
     }
 }

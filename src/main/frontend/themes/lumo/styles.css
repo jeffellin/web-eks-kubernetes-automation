@@ -1,0 +1,34 @@
+/* Custom styles for the Lumo theme */
+
+/* Guestbook-specific styling */
+.guestbook-view {
+  padding: var(--lumo-space-m);
+}
+
+.guestbook-title {
+  color: var(--lumo-primary-text-color);
+  margin-bottom: var(--lumo-space-l);
+}
+
+.toolbar {
+  margin-bottom: var(--lumo-space-m);
+  gap: var(--lumo-space-s);
+}
+
+.content {
+  gap: var(--lumo-space-m);
+}
+
+.guestbook-grid {
+  border-radius: var(--lumo-border-radius-m);
+  box-shadow: var(--lumo-box-shadow-s);
+}
+
+/* Dark theme adjustments */
+html[theme~="dark"] .guestbook-view {
+  background-color: var(--lumo-shade-5pct);
+}
+
+html[theme~="dark"] .guestbook-grid {
+  background-color: var(--lumo-shade-20pct);
+}
