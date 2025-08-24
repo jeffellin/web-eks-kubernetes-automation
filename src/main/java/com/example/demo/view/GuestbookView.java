@@ -47,7 +47,7 @@ public class GuestbookView extends VerticalLayout {
         title.addClassName("guestbook-title");
         
         filterText = new TextField();
-        filterText.setPlaceholder("Filter by name...");
+22        filterText.setPlaceholder("Filter by name...");
         filterText.setClearButtonVisible(true);
         filterText.setValueChangeMode(ValueChangeMode.LAZY);
         filterText.addValueChangeListener(e -> updateList());
