@@ -11,7 +11,8 @@ import java.time.LocalDateTime;
 public class Guestbook {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "guestbook_seq")
+    @SequenceGenerator(name = "guestbook_seq", sequenceName = "guestbook_id_seq", allocationSize = 1)
     private Long id;
 
     @NotBlank(message = "Name is required")
