@@ -56,25 +56,32 @@ jobs:
           name: maven-artifacts
           path: target/
       
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          username: ellinj
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
       
       - name: build/docker
         run: |
-          IMAGE_TAG="ellinj/demo-sec-app:${{ github.sha }}"
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          ECR_REPOSITORY="demo-app"
+          IMAGE_TAG="$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
           
           # Build image using Dockerfile
           docker build -t "$IMAGE_TAG" .
           
           # Tag as latest
-          docker tag "$IMAGE_TAG" ellinj/demo-sec-app:latest
+          docker tag "$IMAGE_TAG" "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
           
           # Push both tags
           docker push "$IMAGE_TAG"
-          docker push ellinj/demo-sec-app:latest
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
 
   trivy:
     name: security/scan
@@ -85,10 +92,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: 'ellinj/demo-sec-app:latest'
+          image-ref: '${{ steps.login-ecr.outputs.registry }}/demo-app:latest'
           format: 'sarif'
           output: 'trivy-results.sarif'
           exit-code: '0'
@@ -155,10 +173,24 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
       
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+      
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      
       - name: Update deployment image tag
         run: |
           cd gitops-repo
-          sed -i "s|image: .*ellinj/demo-sec-app:.*|image: ellinj/demo-sec-app:${{ github.sha }}|g" demo-app/deployment.yaml
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          ECR_REPOSITORY="demo-app"
+          NEW_IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"
+          sed -i "s|image: .*|image: $NEW_IMAGE|g" demo-app/deployment.yaml
           
       - name: Commit and push changes
         run: |
@@ -171,11 +203,13 @@ jobs:
       - name: Create Pull Request
         run: |
           cd gitops-repo
+          ECR_REGISTRY="${{ steps.login-ecr.outputs.registry }}"
+          ECR_REPOSITORY="demo-app"
           gh pr create \
             --title "Update deployment image to ${{ github.sha }}" \
             --body "Automated deployment update from web-eks-kubernetes-automation
             
-            - Updated image tag to: ellinj/demo-sec-app:${{ github.sha }}
+            - Updated image tag to: $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
             - Source commit: ${{ github.repository }}@${{ github.sha }}" \
             --base main \
             --head "$BRANCH_NAME"
