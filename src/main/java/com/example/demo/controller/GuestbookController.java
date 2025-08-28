@@ -14,6 +14,9 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/guestbook")
 @CrossOrigin(origins = "*")
+/**
+ * Comment area
+ */
 public class GuestbookController {
 
     @Autowired
