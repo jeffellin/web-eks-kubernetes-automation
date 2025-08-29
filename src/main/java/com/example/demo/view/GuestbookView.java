@@ -43,7 +43,7 @@ public class GuestbookView extends VerticalLayout {
         setSizeFull();
         
         // Create components
-        H1 title = new H1("Guestbook");
+        H1 title = new H1("Guestbook@!!!");
         title.addClassName("guestbook-title");
         
         filterText = new TextField();
