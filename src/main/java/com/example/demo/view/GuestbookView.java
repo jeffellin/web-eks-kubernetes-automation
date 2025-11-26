@@ -2,12 +2,14 @@ package com.example.demo.view;
 
 import com.example.demo.config.GuestbookProperties;
 import com.example.demo.entity.Guestbook;
+import com.example.demo.security.TeleportAuthentication;
 import com.example.demo.service.GuestbookService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -21,6 +23,11 @@ import com.vaadin.flow.spring.annotation.UIScope;
 import com.vaadin.flow.theme.lumo.Lumo;
 import com.vaadin.flow.component.AttachEvent;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.stream.Collectors;
 
 @SpringComponent
 @UIScope
@@ -43,7 +50,7 @@ public class GuestbookView extends VerticalLayout {
         setSizeFull();
         
         // Create components
-        H1 title = new H1("Guestbook@!!!");
+        H1 title = new H1("Guestbook");
         title.addClassName("guestbook-title");
         
         filterText = new TextField();
@@ -75,16 +82,64 @@ public class GuestbookView extends VerticalLayout {
         
         HorizontalLayout toolbar = new HorizontalLayout(filterText, addEntryButton, themeToggleButton);
         toolbar.addClassName("toolbar");
-        
+
+        // Add user info component
+        HorizontalLayout userInfo = createUserInfoComponent();
+
         HorizontalLayout content = new HorizontalLayout(grid, form);
         content.setFlexGrow(2, grid);
         content.setFlexGrow(1, form);
         content.addClassNames("content");
         content.setSizeFull();
-        
-        add(title, toolbar, content);
+
+        add(title, userInfo, toolbar, content);
         updateList();
         closeEditor();
+    }
+
+    private HorizontalLayout createUserInfoComponent() {
+        HorizontalLayout userInfoLayout = new HorizontalLayout();
+        userInfoLayout.setWidthFull();
+        userInfoLayout.getStyle()
+            .set("padding", "10px")
+            .set("background-color", "var(--lumo-contrast-5pct)")
+            .set("border-radius", "5px")
+            .set("margin-bottom", "10px");
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth instanceof TeleportAuthentication teleportAuth) {
+            // User icon
+            Span userIcon = new Span(VaadinIcon.USER.create());
+            userIcon.getStyle().set("margin-right", "10px");
+
+            // Username
+            Span username = new Span("User: " + teleportAuth.getName());
+            username.getStyle()
+                .set("font-weight", "bold")
+                .set("margin-right", "20px");
+
+            // Email
+            Span email = new Span("Email: " + (teleportAuth.getEmail() != null ? teleportAuth.getEmail() : "N/A"));
+            email.getStyle().set("margin-right", "20px");
+
+            // Roles
+            String roles = teleportAuth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(", "));
+            Span rolesSpan = new Span("Roles: " + roles);
+            rolesSpan.getStyle()
+                .set("font-style", "italic")
+                .set("color", "var(--lumo-secondary-text-color)");
+
+            userInfoLayout.add(userIcon, username, email, rolesSpan);
+        } else {
+            Span notAuthenticated = new Span("Not authenticated via Teleport");
+            notAuthenticated.getStyle().set("color", "var(--lumo-error-text-color)");
+            userInfoLayout.add(notAuthenticated);
+        }
+
+        return userInfoLayout;
     }
     
     @Override
