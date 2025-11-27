@@ -2,7 +2,6 @@ package com.example.demo.view;
 
 import com.example.demo.config.GuestbookProperties;
 import com.example.demo.entity.Guestbook;
-import com.example.demo.security.TeleportAuthentication;
 import com.example.demo.service.GuestbookService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -26,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.util.stream.Collectors;
 
@@ -108,23 +109,27 @@ public class GuestbookView extends VerticalLayout {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 
-        if (auth instanceof TeleportAuthentication teleportAuth) {
+        if (auth instanceof JwtAuthenticationToken jwtAuth) {
+            Jwt jwt = jwtAuth.getToken();
+
             // User icon
             Span userIcon = new Span(VaadinIcon.USER.create());
             userIcon.getStyle().set("margin-right", "10px");
 
-            // Username
-            Span username = new Span("User: " + teleportAuth.getName());
-            username.getStyle()
+            // Username (from subject claim)
+            String username = jwt.getSubject();
+            Span usernameSpan = new Span("User: " + username);
+            usernameSpan.getStyle()
                 .set("font-weight", "bold")
                 .set("margin-right", "20px");
 
-            // Email
-            Span email = new Span("Email: " + (teleportAuth.getEmail() != null ? teleportAuth.getEmail() : "N/A"));
-            email.getStyle().set("margin-right", "20px");
+            // Email (from email claim)
+            String email = jwt.getClaimAsString("email");
+            Span emailSpan = new Span("Email: " + (email != null ? email : "N/A"));
+            emailSpan.getStyle().set("margin-right", "20px");
 
             // Roles
-            String roles = teleportAuth.getAuthorities().stream()
+            String roles = jwtAuth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(", "));
             Span rolesSpan = new Span("Roles: " + roles);
@@ -132,7 +137,7 @@ public class GuestbookView extends VerticalLayout {
                 .set("font-style", "italic")
                 .set("color", "var(--lumo-secondary-text-color)");
 
-            userInfoLayout.add(userIcon, username, email, rolesSpan);
+            userInfoLayout.add(userIcon, usernameSpan, emailSpan, rolesSpan);
         } else {
             Span notAuthenticated = new Span("Not authenticated via Teleport");
             notAuthenticated.getStyle().set("color", "var(--lumo-error-text-color)");
